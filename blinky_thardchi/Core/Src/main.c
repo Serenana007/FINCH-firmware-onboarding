@@ -19,8 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
-#define GPIO_NUMBER           (16U)
-
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -64,7 +62,9 @@ ETH_TxPacketConfig TxConfig;
 
 ETH_HandleTypeDef heth;
 
+TIM_HandleTypeDef htim14;
 TIM_HandleTypeDef htim16;
+TIM_HandleTypeDef htim17;
 
 UART_HandleTypeDef huart3;
 
@@ -81,13 +81,14 @@ static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM16_Init(void);
+static void MX_TIM17_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 
 /* USER CODE END 0 */
 
@@ -98,15 +99,12 @@ static void MX_TIM16_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint16_t timer_val_1;
-	uint16_t timer_val_2;
-	uint16_t timer_val_3;
-
 	// button state
 	GPIO_PinState btn_cur_state;
 
 	// LEDstate
 	int cur_LED = 0;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -131,15 +129,9 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM16_Init();
+  MX_TIM17_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
-
-  // start timer
-  HAL_TIM_Base_Start_IT(&htim16);
-
-  // get current time
-  timer_val_1 = __HAL_TIM_GET_COUNTER(&htim16);
-  timer_val_2 = __HAL_TIM_GET_COUNTER(&htim16);
-  timer_val_3 = __HAL_TIM_GET_COUNTER(&htim16);
 
   /* USER CODE END 2 */
 
@@ -147,15 +139,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  btn_cur_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-	  if (btn_cur_state == 1){
-		  btn_cur_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-		  if (btn_cur_state == 0){
 
-			  if (cur_LED == 3){
+    /* USER CODE END WHILE */
+	  btn_cur_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+	  if (btn_cur_state == 1)
+	  {
+		  btn_cur_state = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+		  if (btn_cur_state == 0)
+		  {
+			  if (cur_LED == 3)
+			  {
 				  cur_LED = 1;
 			  }
-			  else{
+			  else
+			  {
 				  cur_LED++;
 			  }
 		  }
@@ -163,33 +160,27 @@ int main(void)
 
 	  switch (cur_LED){
 	  case 1:
+		  HAL_TIM_Base_Stop_IT(&htim14);
+		  HAL_TIM_Base_Stop_IT(&htim17);
 		  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, 0);
 		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, 0);
-		  if (__HAL_TIM_GET_COUNTER(&htim16) - timer_val_1 >= 10000){
-		  		   uint32_t odr = GPIOB->ODR;
-		  		   GPIOB->BSRR = ((odr & GPIO_PIN_0) << GPIO_NUMBER) | (~odr & GPIO_PIN_0);
-		  		   timer_val_1 = __HAL_TIM_GET_COUNTER(&htim16);
-		  	 }
+		  HAL_TIM_Base_Start_IT(&htim16);
 		  break;
 	  case 2:
+		  HAL_TIM_Base_Stop_IT(&htim14);
+		  HAL_TIM_Base_Stop_IT(&htim16);
 		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
 		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, 0);
-		  if (__HAL_TIM_GET_COUNTER(&htim16) - timer_val_2 >= 5000){
-		  	 		 HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1);
-		  	 		 timer_val_2 = __HAL_TIM_GET_COUNTER(&htim16);
-		  	 }
+		  HAL_TIM_Base_Start_IT(&htim17);
 		  break;
 	  case 3:
+		  HAL_TIM_Base_Stop_IT(&htim16);
+		  HAL_TIM_Base_Stop_IT(&htim17);
 		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, 0);
 		  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, 0);
-		  if (__HAL_TIM_GET_COUNTER(&htim16) - timer_val_3 >= 2500){
-		  	 		 HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
-		  	 		 timer_val_3 = __HAL_TIM_GET_COUNTER(&htim16);
-		  	 }
+		  HAL_TIM_Base_Start_IT(&htim14);
 		  break;
 	  }
-
-    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
@@ -218,19 +209,17 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 24;
+  RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 3;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -242,11 +231,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
@@ -306,6 +295,37 @@ static void MX_ETH_Init(void)
 }
 
 /**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 8000-1;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 2500-1;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
   * @brief TIM16 Initialization Function
   * @param None
   * @retval None
@@ -321,9 +341,9 @@ static void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 6400 - 1;
+  htim16.Init.Prescaler = 8000-1;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim16.Init.Period = 65535;
+  htim16.Init.Period = 10000-1;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim16.Init.RepetitionCounter = 0;
   htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -334,6 +354,38 @@ static void MX_TIM16_Init(void)
   /* USER CODE BEGIN TIM16_Init 2 */
 
   /* USER CODE END TIM16_Init 2 */
+
+}
+
+/**
+  * @brief TIM17 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM17_Init(void)
+{
+
+  /* USER CODE BEGIN TIM17_Init 0 */
+
+  /* USER CODE END TIM17_Init 0 */
+
+  /* USER CODE BEGIN TIM17_Init 1 */
+
+  /* USER CODE END TIM17_Init 1 */
+  htim17.Instance = TIM17;
+  htim17.Init.Prescaler = 8000-1;
+  htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim17.Init.Period = 5000-1;
+  htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim17.Init.RepetitionCounter = 0;
+  htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim17) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM17_Init 2 */
+
+  /* USER CODE END TIM17_Init 2 */
 
 }
 
@@ -489,13 +541,20 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 // Callback: timer has reset
-//void HAL_TIM_PeriodElapsedCallBack(TIM_HandleTypeDef *htim)
-//{
-//	// check which version of the timer triggered this callback and toggle LED
-//	if (htim == &htim16){
-//		HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1);
-//	}
-//}
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+
+	if (htim == &htim16){
+		uint32_t odr = GPIOB->ODR;
+		GPIOB->BSRR = ((odr & GPIO_PIN_0) << 16U) | (~odr & GPIO_PIN_0);
+	}
+	if (htim == &htim17){
+		HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1);
+	}
+	if (htim == &htim14){
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+	}
+}
 
 /* USER CODE END 4 */
 
