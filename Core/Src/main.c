@@ -42,6 +42,8 @@
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef hlpuart1;
 
+TIM_HandleTypeDef htim16;
+
 /* USER CODE BEGIN PV */
 uint8_t beforeState = 0;
 /* USER CODE END PV */
@@ -50,6 +52,7 @@ uint8_t beforeState = 0;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_LPUART1_UART_Init(void);
+static void MX_TIM16_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -66,6 +69,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
+
 /* USER CODE END 0 */
 
 /**
@@ -75,6 +79,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+	uint16_t timer_val;
 
   /* USER CODE END 1 */
 
@@ -97,7 +103,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_LPUART1_UART_Init();
+  MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start(&htim16);
+
+  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
 
   /* USER CODE END 2 */
 
@@ -109,28 +120,31 @@ int main(void)
 	  // 1 HZ
 	  if (beforeState == 0)
 	  {
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		  HAL_Delay(500);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		  HAL_Delay(500);
+		  if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 5000)
+		  {
+			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+			  timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+		  }
 	  }
 
 	  // 2 HZ
 	  if (beforeState == 1)
 	  {
-		  GPIOA -> BSRR |= (1<<5);
-		  HAL_Delay(250);
-		  GPIOA -> BSRR |= (1<<5) << 16;
-		  HAL_Delay(250);
+		  if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 2500)
+		  {
+		  	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		  	timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+		  }
 	  }
 
 	  // 4 HZ
 	  if (beforeState == 2)
 	  {
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		  HAL_Delay(125);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		  HAL_Delay(125);
+		  if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 1250)
+		  {
+		  	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		  	timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+		  }
 	  }
 
     /* USER CODE END WHILE */
@@ -230,6 +244,38 @@ static void MX_LPUART1_UART_Init(void)
   /* USER CODE BEGIN LPUART1_Init 2 */
 
   /* USER CODE END LPUART1_Init 2 */
+
+}
+
+/**
+  * @brief TIM16 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM16_Init(void)
+{
+
+  /* USER CODE BEGIN TIM16_Init 0 */
+
+  /* USER CODE END TIM16_Init 0 */
+
+  /* USER CODE BEGIN TIM16_Init 1 */
+
+  /* USER CODE END TIM16_Init 1 */
+  htim16.Instance = TIM16;
+  htim16.Init.Prescaler = 17000-1;
+  htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim16.Init.Period = 65535;
+  htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim16.Init.RepetitionCounter = 0;
+  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM16_Init 2 */
+
+  /* USER CODE END TIM16_Init 2 */
 
 }
 
