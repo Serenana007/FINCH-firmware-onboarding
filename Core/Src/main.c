@@ -118,9 +118,9 @@ int main(void)
 	  // 2 HZ
 	  if (beforeState == 1)
 	  {
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		  GPIOA -> BSRR |= (1<<5);
 		  HAL_Delay(250);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		  GPIOA -> BSRR |= (1<<5) << 16;
 		  HAL_Delay(250);
 	  }
 
