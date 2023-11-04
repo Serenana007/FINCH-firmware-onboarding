@@ -127,12 +127,15 @@ int main(void)
 		  }
 	  }
 
+	  uint32_t odr;
 	  // 2 HZ
 	  if (beforeState == 1)
 	  {
 		  if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 2500)
 		  {
-		  	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+
+			  odr = GPIOA->ODR;
+			  GPIOA->BSRR = ((odr & (1<<5)) << 16) | (~odr & (1<<5));
 		  	timer_val = __HAL_TIM_GET_COUNTER(&htim16);
 		  }
 	  }
