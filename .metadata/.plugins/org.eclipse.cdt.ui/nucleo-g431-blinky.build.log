@@ -1,0 +1,10 @@
+23:22:49 **** Incremental Build of configuration Debug for project nucleo-g431-blinky ****
+make -j8 all 
+arm-none-eabi-size   nucleo-g431-blinky.elf 
+   text	   data	    bss	    dec	    hex	filename
+  13300	     20	   1796	  15116	   3b0c	nucleo-g431-blinky.elf
+Finished building: default.size.stdout
+ 
+
+23:22:49 Build Finished. 0 errors, 0 warnings. (took 331ms)
+
