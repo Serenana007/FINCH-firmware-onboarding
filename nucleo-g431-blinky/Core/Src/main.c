@@ -69,7 +69,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 			}
 	}
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -114,7 +113,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
 	  switch (count){
 	  	 case 0:
 	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 10000){
@@ -135,7 +133,6 @@ int main(void)
 	  		}
 			break;
 	  }
-
 
     /* USER CODE END WHILE */
 
