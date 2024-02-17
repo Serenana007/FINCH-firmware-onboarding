@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -59,17 +59,16 @@ static void MX_TIM16_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int count = 0;
+int mode = 0;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == GPIO_PIN_13){
-		count++;
-			if(count == 3){
-				count = 0;
-			}
+		mode++;
+		if(mode == 3){
+			mode = 0;
+		}
 	}
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -103,38 +102,37 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
+
   HAL_TIM_Base_Start_IT(&htim16);
-
   uint16_t timer_val;
-
   timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  switch (count){
-	  	 case 0:
+	  if (mode == 0){
 	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 10000){
-	  			GPIOA->ODR ^= GPIO_PIN_5;
-	  			timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-	  		}
-	  		break;
-	  	 case 1:
-	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 5000){
-	  			GPIOA->ODR ^= GPIO_PIN_5;
-	  			timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-	  		}
-		  	break;
-	  	 case 2:
-	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 2500){
 	  			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 	  			timer_val = __HAL_TIM_GET_COUNTER(&htim16);
 	  		}
-			break;
 	  }
+
+	  if (mode == 1){
+	  	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 5000){
+	  	  			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	  	  			timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+	  	  		}
+	  }
+	  if (mode == 2){
+	  	  		if(__HAL_TIM_GET_COUNTER(&htim16) - timer_val >= 2500){
+	  	  			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	  	  			timer_val = __HAL_TIM_GET_COUNTER(&htim16);
+	  			}
+	  }
+
 
 
     /* USER CODE END WHILE */
@@ -143,6 +141,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+  /* USER CODE END 3 */
 
 /**
   * @brief System Clock Configuration
@@ -155,7 +154,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -165,8 +164,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 10;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
+  RCC_OscInitStruct.PLL.PLLN = 85;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -184,7 +183,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -287,7 +286,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -295,12 +294,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
+  /*Configure GPIO pin : PA5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
